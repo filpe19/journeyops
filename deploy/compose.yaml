@@ -1,0 +1,25 @@
+# JourneyOps public demo runtime (PHP-FPM only; the host's Nginx serves static files).
+# Usage on the server:  sudo docker compose -f /var/www/journeyops/deploy/compose.yaml up -d --build
+name: journeyops
+
+services:
+  app:
+    build: .
+    image: journeyops-php:8.4
+    container_name: journeyops-app
+    restart: unless-stopped
+    # umask 002 keeps files the app creates group-writable (group www-data = the deploy group).
+    command: ["sh", "-c", "umask 002 && exec php-fpm"]
+    working_dir: /var/www/journeyops
+    volumes:
+      # Same path inside and outside, so Nginx's SCRIPT_FILENAME is valid in the container.
+      - /var/www/journeyops:/var/www/journeyops
+    ports:
+      - "127.0.0.1:9085:9000"
+    mem_limit: 384m
+    cpus: 0.75
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"

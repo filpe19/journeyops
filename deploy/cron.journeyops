@@ -1,0 +1,9 @@
+# /etc/cron.d/journeyops — JourneyOps public demo (server time zone: America/Belem, UTC-3)
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Laravel scheduler (journeys:close-idle every 5 minutes). Skipped while a reset holds the lock.
+* * * * * deploy flock -n /tmp/journeyops.lock sudo -n docker exec -u www-data journeyops-app php artisan schedule:run >/dev/null 2>&1
+
+# Daily reset of the synthetic demo data at 04:30 America/Belem (07:30 UTC).
+30 4 * * * deploy flock -w 120 /tmp/journeyops.lock sudo -n docker exec -u www-data journeyops-app php artisan demo:reset --force >>/var/log/journeyops-reset.log 2>&1

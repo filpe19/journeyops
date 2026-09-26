@@ -21,11 +21,7 @@
                 <p class="eyebrow">Ticket Lab</p>
                 <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Welcome back.</h1>
                 <p class="mt-4 text-ink-soft">Sign in to see your tickets or manage your events.</p>
-                <div class="mt-8 rounded-2xl border border-line bg-surface p-5">
-                    <p class="text-xs font-medium tracking-wide text-ink-muted uppercase">Synthetic demo operator</p>
-                    <p class="mt-2 text-sm text-ink-soft">To inspect journeys in the ops console, sign in as</p>
-                    <p class="mt-2 font-mono text-sm"><span class="text-ink">admin@example.test</span> <span class="text-ink-muted">/</span> <span class="text-ink">password</span></p>
-                </div>
+                <p class="mt-6 text-sm text-ink-muted">This is a synthetic demo. Please don't use a real password from anywhere else.</p>
             @endif
         </div>
 

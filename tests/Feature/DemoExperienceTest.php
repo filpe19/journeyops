@@ -35,7 +35,7 @@ class DemoExperienceTest extends TestCase
         $this->get('/demo')
             ->assertOk()
             ->assertSee('Launch live ticket journey')
-            ->assertSee('admin@example.test');
+            ->assertDontSee('admin@example.test');
 
         $this->assertSame(0, JourneySession::count());
     }

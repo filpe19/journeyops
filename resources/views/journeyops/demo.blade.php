@@ -90,20 +90,16 @@
                     <div class="min-w-0 flex-1">
                         <h2 class="text-lg font-semibold">Inspect the resulting journey</h2>
                         <p class="mt-2 text-sm leading-relaxed text-ink-soft">
-                            The order confirmation page shows the journey your visit just recorded, read from the telemetry store. For the full operations console, sign out and sign in as the synthetic operator:
+                            The order confirmation page reads the journey your visit just recorded from the telemetry store: the outcome, the checkout and payment events, and the role your signup created. Expand <span class="text-ink">Full event sequence</span> to see every step.
                         </p>
-                        <div class="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-canvas p-3 font-mono text-sm">
-                            <span class="text-ink">admin@example.test</span>
-                            <span class="text-ink-muted">/</span>
-                            <span class="text-ink">password</span>
-                            <button type="button" class="btn-ghost ml-auto min-h-9 px-2.5 text-xs" data-copy="admin@example.test">Copy email</button>
-                        </div>
-                        <div class="mt-4 flex flex-wrap gap-2">
-                            @auth
+                        <p class="mt-3 text-sm leading-relaxed text-ink-muted">
+                            The full operations console shows every visitor's journeys, so it isn't public in this demo. It's shown in the project video and can be run locally (see the demo guide).
+                        </p>
+                        @auth
+                            <div class="mt-4 flex flex-wrap gap-2">
                                 <a href="{{ route('account') }}" class="btn-secondary">My tickets</a>
-                            @endauth
-                            <a href="{{ route('ops.dashboard') }}" class="btn-secondary">Open ops console</a>
-                        </div>
+                            </div>
+                        @endauth
                     </div>
                 </div>
             </li>

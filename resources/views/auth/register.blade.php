@@ -23,7 +23,11 @@
             @csrf
             <div>
                 <h2 class="text-xl font-semibold">Create your account</h2>
-                <p class="mt-1 text-sm text-ink-muted">Synthetic lab. Any address works, and nothing is emailed.</p>
+                <p class="mt-1 text-sm text-ink-muted">Nothing is emailed. This is a synthetic lab.</p>
+                <p class="mt-3 flex gap-2 rounded-lg border border-line-strong bg-canvas px-3 py-2.5 text-sm text-ink-soft">
+                    <svg class="mt-0.5 size-4 shrink-0 text-signal" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v3.5M8 5v.01"/></svg>
+                    <span>Synthetic demo: please use a test identity such as <span class="font-mono text-ink">name@example.test</span>, and don't enter personal information.</span>
+                </p>
             </div>
 
             @unless ($purchase)
