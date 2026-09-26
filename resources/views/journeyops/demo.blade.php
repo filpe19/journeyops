@@ -35,7 +35,7 @@
                         <p class="mt-2 text-sm leading-relaxed text-ink-soft">
                             At <span class="font-mono text-ink">baseline-pre-bob</span>, a new visitor from a shared event link who created an account at checkout was made a <span class="font-mono text-fail">producer</span>. They were sent to organizer onboarding and never paid. All 45 tests passed.
                         </p>
-                        <div class="mt-4 rounded-xl border border-line bg-canvas p-4 font-mono text-xs leading-relaxed text-ink-muted">
+                        <div class="mt-4 rounded-xl border border-line bg-canvas p-4 font-mono text-xs leading-relaxed text-ink-muted [overflow-wrap:anywhere]">
                             signup_started <span class="text-ink-soft">context=checkout</span><br>
                             signup_completed <span class="text-fail">user_role=producer target_route=/producer/onboarding</span><br>
                             producer_onboarding_viewed → journey_abandoned <span class="text-fail">· ABANDONED</span>
@@ -58,7 +58,7 @@
                             Open <span class="font-semibold text-ink">AI Builders Night 2026</span> through its shared link, the same entry point as the original incident. If you are signed in, sign out first so you arrive as a new visitor.
                         </p>
                         @auth
-                            <p class="mt-3 rounded-lg border border-warn/30 bg-warn/10 px-3 py-2 text-sm text-warn">You're currently signed in as {{ auth()->user()->email }}. Sign out to replay the new-visitor journey.</p>
+                            <p class="mt-3 rounded-lg border border-warn/30 bg-warn/10 px-3 py-2 text-sm text-warn [overflow-wrap:anywhere]">You're currently signed in as {{ auth()->user()->email }}. Sign out to replay the new-visitor journey.</p>
                         @endauth
                         <div class="mt-4">
                             <a href="{{ $shareLink }}" class="btn-primary">Launch live ticket journey →</a>

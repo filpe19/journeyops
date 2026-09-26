@@ -7,7 +7,7 @@
         <div>
             <p class="eyebrow">Account</p>
             <h1 class="mt-2 text-3xl font-semibold tracking-tight">Hi, {{ $user->name }}</h1>
-            <p class="mt-1 text-sm text-ink-muted">{{ $user->email }} · <span class="font-mono">{{ $user->role->value }}</span></p>
+            <p class="mt-1 text-sm text-ink-muted [overflow-wrap:anywhere]">{{ $user->email }} · <span class="font-mono">{{ $user->role->value }}</span></p>
         </div>
         <a class="btn-secondary" href="{{ route('home') }}">Back to JourneyOps</a>
     </div>

@@ -29,7 +29,7 @@
                 </dl>
                 <div class="border-t border-line px-6 py-4">
                     <p class="text-xs text-ink-muted">Customer</p>
-                    <p class="mt-1 text-sm font-medium">{{ auth()->user()?->name }} <span class="text-ink-muted">· {{ auth()->user()?->email }}</span></p>
+                    <p class="mt-1 text-sm font-medium [overflow-wrap:anywhere]">{{ auth()->user()?->name }} <span class="text-ink-muted">· {{ auth()->user()?->email }}</span></p>
                 </div>
             </section>
 
