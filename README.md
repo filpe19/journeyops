@@ -1,58 +1,112 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# JourneyOps Ticket Lab
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A production-like digital ticketing laboratory with user-journey telemetry for AI-assisted software investigation.
 
-## About Laravel
+JourneyOps Ticket Lab is a small but complete ticketing platform that runs entirely on a laptop:
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Organizers (producers)** create events, publish them and share a public link.
+- **Buyers** open the link, buy tickets, sign in or create an account at checkout, and pay (simulated, deterministic).
+- **Every step of every visit** is recorded as a *journey* in SQLite and mirrored to a JSON Lines log.
+- An **operations view** (`/ops`) and a set of **`ops:*` Artisan commands** let an engineer check sales and reconstruct any journey.
+- A **synthetic traffic generator** drives the real web flows (routes, middleware, controllers, sessions, CSRF) to produce realistic, reproducible history.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+All data is synthetic. See [docs/DATA_POLICY.md](docs/DATA_POLICY.md).
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Stack
 
-## Learning Laravel
+| Layer | Choice |
+|---|---|
+| Language / framework | PHP 8.4+ (tested on 8.5), Laravel 13 |
+| Database | SQLite (`database/database.sqlite`) |
+| Frontend | Blade + Tailwind CSS 4, built with Vite |
+| Tests | PHPUnit 12 (`php artisan test`) |
+| External services | none (no payment gateway, no third-party APIs, no Docker) |
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Quick start
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+cp .env.example .env
+php artisan key:generate
+touch database/database.sqlite
+php artisan migrate:fresh --seed
+npm install
+npm run build
+php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Or run `./scripts/setup.sh` which performs all of the above except starting the server.
 
-## Contributing
+## URLs
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| What | URL |
+|---|---|
+| Home / catalog | http://127.0.0.1:8000/ |
+| Demo event (shared link) | http://127.0.0.1:8000/events/ai-builders-night-2026?ref=share |
+| Operations view | http://127.0.0.1:8000/ops (admin only) |
+| Health check | http://127.0.0.1:8000/health |
+| Organizer landing | http://127.0.0.1:8000/sell |
 
-## Code of Conduct
+## Demo accounts
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+All passwords are `password`. These accounts exist only in the local synthetic database.
 
-## Security Vulnerabilities
+| Email | Role |
+|---|---|
+| `admin@example.test` | admin (access to `/ops`) |
+| `producer@example.test` | producer — *NovaStage Events* |
+| `buyer.one@example.test`, `buyer.two@example.test`, `buyer.four@example.test`, `buyer.five@example.test` | buyer |
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+`buyer.three@example.test` and `producer.lumen@example.test` are created by the traffic generator through the public signup flow.
 
-## License
+## Tests
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+php artisan test
+```
+
+## Operational commands
+
+```bash
+php artisan ops:summary [--days=1] [--json]          # sales + journey health for a window
+php artisan ops:journeys [--limit=25] [--source=event_share] [--with-sequence] [--json]
+php artisan ops:journey JRN-XXXXXXXX [--json]        # full timeline of one journey (code or UUID)
+php artisan journeys:close-idle [--minutes=30]       # end idle journeys (scheduled every 5 min)
+```
+
+## Demo data and traffic
+
+```bash
+php artisan demo:reset --force        # wipe DB + journey log, reseed accounts, events and ~3 days of traffic
+php artisan demo:seed                 # same data into an empty, migrated database
+php artisan demo:simulate --list      # available synthetic visitor scenarios
+php artisan demo:simulate --all       # run every scenario now
+php artisan demo:simulate returning-buyer-share-link newsletter-buyer
+php artisan demo:replay-checkout      # new visitor from the shared link goes through checkout with signup
+./scripts/replay_checkout_journey.sh  # same as above
+```
+
+Traffic runs in-process by default (no server needed). Add `--url=http://127.0.0.1:8000` to `demo:simulate` or `demo:replay-checkout` to send it over HTTP to a running server instead.
+
+`./scripts/smoke.sh [base-url]` checks the main pages of a running instance.
+
+## Documentation
+
+- [AGENTS.md](AGENTS.md) — orientation for engineers and coding agents
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md)
+- [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md)
+- [docs/DATA_POLICY.md](docs/DATA_POLICY.md)
+
+## Repository layout
+
+```
+app/            application code (see docs/ARCHITECTURE.md)
+bob_sessions/   IBM Bob task-session screenshots for the hackathon submission
+database/       migrations, factories, seeders (synthetic data only)
+docs/           architecture, observability, local development, data policy
+resources/      Blade views, CSS, JS
+routes/         web routes and scheduled commands
+scripts/        setup, smoke test and journey replay helpers
+tests/          PHPUnit feature and unit tests
+```
