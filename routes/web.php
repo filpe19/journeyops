@@ -21,6 +21,9 @@ Route::get('/', [EventController::class, 'index'])->name('home');
 Route::get('/events/{event}', [EventController::class, 'show'])->name('events.show');
 Route::get('/sell', SellController::class)->name('sell');
 
+// JourneyOps guided demo (static presentation page, no telemetry)
+Route::view('/demo', 'journeyops.demo')->name('demo');
+
 // Purchase funnel
 Route::post('/events/{event}/buy', [CheckoutController::class, 'buy'])->name('checkout.buy');
 Route::get('/checkout/{event}', [CheckoutController::class, 'show'])->name('checkout.show');

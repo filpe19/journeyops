@@ -3,9 +3,9 @@
 @section('title', 'New event')
 
 @section('content')
-    <form method="POST" action="{{ route('producer.events.store') }}" class="card mx-auto max-w-lg space-y-4">
+    <form method="POST" action="{{ route('producer.events.store') }}" class="card mx-auto max-w-lg space-y-5 sm:p-8">
         @csrf
-        <h1 class="text-xl font-bold">New event</h1>
+        <h1 class="text-2xl font-semibold tracking-tight">New event</h1>
         <div>
             <label class="label" for="title">Title</label>
             <input id="title" name="title" value="{{ old('title') }}" class="field" required>
@@ -32,6 +32,6 @@
                 @error('starts_at') <p class="error">{{ $message }}</p> @enderror
             </div>
         </div>
-        <button type="submit" class="btn-primary w-full">Save draft</button>
+        <button type="submit" class="btn-primary btn-lg w-full">Save draft</button>
     </form>
 @endsection
