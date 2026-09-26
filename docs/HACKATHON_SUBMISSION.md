@@ -122,7 +122,7 @@ IBM Bob (Ask, Plan and Agent modes, subagents, skills) · PHP 8.4+/8.5 · Larave
 
 ## GitHub URL
 
-[TBD — GitHub URL]
+https://github.com/filpe19/journeyops
 
 ## Demo URL
 
