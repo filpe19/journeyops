@@ -261,4 +261,4 @@ JourneyOps was built for the **IBM Bob 2.0 Hackathon**. It is a prototype of a w
 
 ## License
 
-No `LICENSE` file is currently included. `composer.json` carries Laravel's default `"license": "MIT"` field, but no license has been formally chosen for this repository yet.
+This project is licensed under the [MIT License](LICENSE).
