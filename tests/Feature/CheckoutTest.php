@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\OrderStatus;
+use App\Enums\UserRole;
 use App\Models\Event;
 use App\Models\JourneySession;
 use App\Models\Order;
@@ -122,6 +123,91 @@ class CheckoutTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->post("/events/{$event->slug}/buy", ['quantity' => 1])
             ->assertNotFound();
+    }
+
+    /**
+     * Regression test for: guest who registers during checkout must become a buyer
+     * and must be returned to the intended checkout flow — never to producer onboarding.
+     *
+     * Covers the exact journey observed in JRN-721B2F18:
+     *   event_page_viewed → buy_clicked → checkout_started → auth_required
+     *   → signup_started → signup_completed → checkout_resumed → order_created
+     *   → payment_started → payment_completed
+     */
+    public function test_guest_who_registers_during_checkout_returns_to_checkout_as_buyer(): void
+    {
+        $event = Event::factory()->create(['price' => 4900]);
+
+        // Guest starts the purchase funnel — this stores PurchaseIntent and sets intended URL.
+        $this->post("/events/{$event->slug}/buy", ['quantity' => 2]);
+        $this->get("/checkout/{$event->slug}")->assertRedirect('/login');
+
+        // Guest chooses to register (no account_type submitted — form hides the field in checkout context).
+        $this->post('/register', [
+            'name' => 'New Buyer',
+            'email' => 'newbuyer@example.test',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            // Intentionally no 'account_type' key, as the checkout registration form omits it.
+        ])->assertRedirect("/checkout/{$event->slug}");   // must return to checkout, NOT /producer/onboarding
+
+        // Verify the created account is a buyer.
+        $user = User::where('email', 'newbuyer@example.test')->sole();
+        $this->assertSame(UserRole::Buyer, $user->role);
+
+        // Verify the user is NOT sent to producer onboarding.
+        $this->assertFalse($user->isProducer());
+
+        // Checkout page must be accessible and show the correct total.
+        $this->get("/checkout/{$event->slug}")->assertOk()->assertSee('Pay $98.00');
+
+        // Complete the purchase.
+        $this->post("/checkout/{$event->slug}", ['quantity' => 2, 'cardholder' => 'New Buyer']);
+
+        $order = Order::sole();
+        $this->assertSame(OrderStatus::Paid, $order->status);
+        $this->assertSame(9800, $order->total);
+        $this->assertSame($user->id, $order->user_id);
+
+        // Assert the full journey event sequence, including checkout_resumed after auth.
+        $eventNames = $this->journeyEventNames();
+        $this->assertContains('signup_completed', $eventNames);
+        $this->assertContains('checkout_resumed', $eventNames);
+        $this->assertContains('order_created', $eventNames);
+        $this->assertContains('payment_completed', $eventNames);
+        $this->assertNotContains('producer_onboarding_viewed', $eventNames);
+
+        // Assert signup_completed recorded user_role = 'buyer'.
+        $signupEvent = \App\Models\JourneyEvent::where('event_name', 'signup_completed')->sole();
+        $this->assertSame('buyer', $signupEvent->metadata['user_role']);
+        $this->assertStringContainsString('/checkout/', $signupEvent->metadata['target_route']);
+    }
+
+    /**
+     * Regression: the checkout-context buyer-enforcement must hold even when the deployment
+     * is configured with ACCOUNT_DEFAULT_TYPE=producer. The purchase-context invariant must
+     * not depend on environment configuration.
+     */
+    public function test_checkout_registration_forces_buyer_even_when_default_is_producer(): void
+    {
+        // Simulate an environment that has ACCOUNT_DEFAULT_TYPE=producer.
+        config(['accounts.default_type' => 'producer']);
+
+        $event = Event::factory()->create(['price' => 4900]);
+
+        $this->post("/events/{$event->slug}/buy", ['quantity' => 1]);
+        $this->get("/checkout/{$event->slug}")->assertRedirect('/login');
+
+        $this->post('/register', [
+            'name' => 'Forced Buyer',
+            'email' => 'forcedbuyer@example.test',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            // No account_type — the checkout form omits it.
+        ])->assertRedirect("/checkout/{$event->slug}");   // must still return to checkout
+
+        $user = User::where('email', 'forcedbuyer@example.test')->sole();
+        $this->assertSame(UserRole::Buyer, $user->role);
     }
 
     public function test_order_confirmation_is_only_visible_to_its_owner(): void

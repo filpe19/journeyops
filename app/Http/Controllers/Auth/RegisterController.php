@@ -47,6 +47,13 @@ class RegisterController extends Controller
             'account_type' => ['nullable', Rule::in(UserRole::selfService())],
         ]);
 
+        // A guest registering as part of a purchase journey must always become a buyer,
+        // regardless of what account_type was submitted (or not) and regardless of any
+        // deployment-level ACCOUNT_DEFAULT_TYPE configuration.
+        if (PurchaseIntent::event($request->session()) !== null) {
+            $validated['account_type'] = UserRole::Buyer->value;
+        }
+
         $user = $registerAccount->handle($validated);
 
         Auth::login($user);

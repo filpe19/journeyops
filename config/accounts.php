@@ -12,6 +12,6 @@ return [
     |
     */
 
-    'default_type' => env('ACCOUNT_DEFAULT_TYPE', 'producer'),
+    'default_type' => env('ACCOUNT_DEFAULT_TYPE', 'buyer'),
 
 ];

@@ -55,6 +55,25 @@ class RegistrationTest extends TestCase
         $this->assertSame(UserRole::Producer, User::where('email', 'crew@example.test')->sole()->role);
     }
 
+    /**
+     * Pins the safe default: registration without an explicit account_type must produce
+     * a buyer, not a producer. This catches any future regression where the config default
+     * is changed back to 'producer'.
+     */
+    public function test_registration_without_account_type_defaults_to_buyer(): void
+    {
+        $this->post('/register', [
+            'name' => 'Default User',
+            'email' => 'defaultuser@example.test',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            // Intentionally no 'account_type' key.
+        ])->assertRedirect('/account');  // buyer home, not /producer/onboarding
+
+        $user = User::where('email', 'defaultuser@example.test')->sole();
+        $this->assertSame(UserRole::Buyer, $user->role);
+    }
+
     public function test_admin_accounts_cannot_be_self_registered(): void
     {
         $this->post('/register', [
