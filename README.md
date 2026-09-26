@@ -4,6 +4,8 @@
 
 > *"The test suite was green. The user journey wasn't."*
 
+**▶ Live demo: [https://journeyops.tickiton.com.br](https://journeyops.tickiton.com.br)** · [Guided demo](https://journeyops.tickiton.com.br/demo) · synthetic data and simulated payments only
+
 Most coding agents start when a developer already knows what needs to be fixed.
 JourneyOps starts one step earlier: working out what actually happened to the user.
 
@@ -251,6 +253,8 @@ php artisan ops:journey JRN-XXXXXXXX             # full timeline of one journey 
 
 Step-by-step walkthrough, including how to reproduce the **baseline** failure safely: [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md).
 
+The public instance at https://journeyops.tickiton.com.br runs the same `main` in an isolated container on a VPS. It blocks the ops console publicly and resets its synthetic data daily. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
 ## Tests
 
 ```bash
@@ -287,6 +291,7 @@ Because both ends are tagged, the before/after comparison can be reproduced exac
 |---|---|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | JourneyOps architecture, agent workflow and trust model |
 | [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md) | Reproduce the demo (before and after) locally |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | How the public demo is deployed, hardened and reset |
 | [docs/TICKET_LAB_ARCHITECTURE.md](docs/TICKET_LAB_ARCHITECTURE.md) | Ticket Lab internals: routes, flows, data model |
 | [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md) | Journey event catalogue, outcome rules, JSONL and SQL |
 | [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md) | Local setup and troubleshooting |

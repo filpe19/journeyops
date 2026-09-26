@@ -1,5 +1,7 @@
 # Demo Guide
 
+**Live public demo:** https://journeyops.tickiton.com.br. Start at [`/demo`](https://journeyops.tickiton.com.br/demo) for the guided walkthrough. The steps below run the same thing on your own machine, and also let you reproduce the broken baseline.
+
 Reproduce the JourneyOps demonstration on your own machine: the corrected journey on `main`, and optionally the original failure at `baseline-pre-bob`, without touching your main checkout.
 
 Everything runs locally with synthetic data. No accounts, API keys or network services are needed.
@@ -204,13 +206,15 @@ This is the exact sequence the public demo is designed for. It needs no explanat
 5. Choose **Create an account**. The page reads *Create your account to continue checkout*, and no account-type selector is shown. Register with any new `@example.test` address and press **Create account and continue**.
 6. You land back on checkout as a buyer (*Review and pay*, marked *Simulated checkout*). Press **Pay $49.00**.
 7. The confirmation page says **Purchase complete**. Next to it, *What the telemetry recorded* reads your journey from the telemetry store: `COMPLETED`, with `checkout_resumed`, `order_created` and `payment_completed` recorded and `signup_completed · user_role=buyer`.
-8. **View journey evidence** leads to step 4 of `/demo`. For the full ops console, sign out and sign in as `admin@example.test` / `password`, then open `/ops` and select your journey to see its timeline, with metadata per step.
+8. **View journey evidence** leads to step 4 of `/demo`. Locally, you can also open the full ops console: sign out, sign in as `admin@example.test` / `password`, open `/ops` and select your journey to see its timeline, with metadata per step.
+
+On the **public** demo (https://journeyops.tickiton.com.br), `/ops` is blocked because it lists every visitor's journeys. Each visitor sees their own journey on the order confirmation page instead.
 
 `/demo` walks through the same five steps with buttons for each one.
 
 ### Public demo reset
 
-The public UI deliberately has **no reset endpoint**. Resetting stays an operator action on the host:
+The public UI deliberately has **no reset endpoint**. On the public instance, a cron job resets the synthetic data daily at 04:30 America/Belem (07:30 UTC). See [DEPLOYMENT.md](DEPLOYMENT.md). Locally, resetting is an operator action:
 
 ```bash
 php artisan demo:reset --force

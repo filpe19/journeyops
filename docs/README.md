@@ -6,6 +6,7 @@
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | JourneyOps workflow, IBM Bob interaction model, verification and trust model, limitations, future work |
 | [DEMO_GUIDE.md](DEMO_GUIDE.md) | Reproduce the demo locally, including the baseline failure |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | Public demo deployment, hardening, scheduler, reset and rollback |
 
 ## Hackathon materials
 

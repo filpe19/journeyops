@@ -128,7 +128,7 @@ https://github.com/filpe19/journeyops
 
 ## Demo URL
 
-[TBD — Demo URL]
+https://journeyops.tickiton.com.br
 
 ## Video URL
 

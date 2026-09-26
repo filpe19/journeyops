@@ -14,7 +14,7 @@ This is the source content for a five-slide deck, not the final slides. Each sli
 - Tests can pass while users still fail
 - In our controlled lab: 45 / 45 tests passing, and every new visitor who signed up at checkout lost their purchase
 
-**Visual:** a green CI badge next to a journey that ends in a red "ABANDONED".
+**Visual:** a screenshot of the live landing hero (https://journeyops.tickiton.com.br): the headline next to the journey trace on **Before IBM Bob**, ending in ABANDONED.
 
 **Speaker notes:** Redirect mistakes, wrong role assignments and state-dependent flows don't crash and don't fail tests. Someone has to work out what happened to the user first. Most coding agents start after that point.
 
@@ -57,7 +57,7 @@ Source code & tests
 **Provenance strip (small, under the timeline):**
 `BEFORE BOB: controlled lab + seeded failure scenario (baseline-pre-bob)` → `WITH BOB: discover → plan → fix → verify` → `AFTER: verified completed journey (bob-final-verified)`
 
-**Visual:** four-step horizontal timeline, one screenshot thumbnail from `bob_sessions/` per task.
+**Visual:** the landing's Discover · Plan · Fix · Verify cards, or a four-step timeline with one `bob_sessions/` screenshot thumbnail per task.
 
 **Speaker notes:** In Task 03 Bob rejected the minimal plan from Task 02: a config-only fix would still break if a deployment set `ACCOUNT_DEFAULT_TYPE=producer`. It enforced the invariant in code instead.
 
@@ -77,7 +77,7 @@ Source code & tests
 - Tests: **45 → 48**, **191 assertions**, **zero regressions**
 - Producer signup still goes to onboarding (unchanged)
 
-**Visual:** two journey timelines side by side (red vs. green), taken from `demo:replay-checkout` output.
+**Visual:** the landing's before/after cards (*Synthetic baseline before IBM Bob* vs *Verified after IBM Bob*), or the live confirmation page's *What the telemetry recorded* panel showing COMPLETED.
 
 **Speaker notes:** Before and after are pinned by git tags (`baseline-pre-bob`, `bob-final-verified`). Anyone can re-run the replay: exit code 1 before, 0 after.
 
@@ -97,6 +97,8 @@ Source code & tests
 - FUTURE: automatic anomaly detection that opens a Bob task
 - FUTURE: journey replay as a CI/CD gate
 - FUTURE: deployment verification that compares live journeys before and after
+
+**Try it:** https://journeyops.tickiton.com.br (live demo) · https://github.com/filpe19/journeyops
 
 **Closing line:** *Most coding agents start when a developer already knows what to fix. JourneyOps starts one step earlier.*
 
