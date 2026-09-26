@@ -228,7 +228,16 @@ npm install
 npm run build
 ```
 
-Useful URLs: `/events/ai-builders-night-2026?ref=share` (shared event link), `/ops` (operations view, sign in as `admin@example.test` / `password`), `/health`.
+Then open http://127.0.0.1:8000 and click **Launch live demo**.
+
+| Route | What it is |
+|---|---|
+| `/` | JourneyOps overview: problem, before → after, IBM Bob workflow, architecture, evidence, Ticket Lab catalog |
+| `/demo` | 5-step guided demo for judges |
+| `/events/ai-builders-night-2026?ref=share` | The live, fixed ticket journey (same entry point as the original incident) |
+| `/orders/{id}` | Purchase confirmation with the journey your visit recorded |
+| `/ops` | Ops console with journey timelines (sign in as `admin@example.test` / `password`) |
+| `/health` | Health check |
 
 ## Demo commands
 
@@ -248,7 +257,9 @@ Step-by-step walkthrough, including how to reproduce the **baseline** failure sa
 php artisan test
 ```
 
-Current result on `main`: **48 passed, 191 assertions**. At `baseline-pre-bob`: 45 passed, 165 assertions. The baseline suite was green while the journey was broken.
+At `bob-final-verified`: **48 passed, 191 assertions**. At `baseline-pre-bob`: 45 passed, 165 assertions. The baseline suite was green while the journey was broken.
+
+`main` also adds `DemoExperienceTest` (3 tests) for the public demo pages, giving 51 passed / 206 assertions. The 48 Bob-verified tests are unchanged.
 
 ## Repository milestones
 

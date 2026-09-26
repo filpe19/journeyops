@@ -182,7 +182,7 @@ php artisan ops:journeys --with-sequence --source=producer_landing
 ## 6. Run the tests
 
 ```bash
-php artisan test                                   # 48 passed (191 assertions) on main
+php artisan test                                   # 51 passed (206 assertions) on main: the 48 Bob-verified tests + 3 demo-page tests
 php artisan test --filter="CheckoutTest|RegistrationTest"
 php artisan test --filter=ProducerAreaTest
 ```
@@ -193,13 +193,30 @@ The three regression tests added by IBM Bob:
 - `CheckoutTest::test_checkout_registration_forces_buyer_even_when_default_is_producer`
 - `RegistrationTest::test_registration_without_account_type_defaults_to_buyer`
 
-## 7. Try it in the browser
+## 7. Walk the demo in the browser
 
-1. `php artisan serve` and open http://127.0.0.1:8000/events/ai-builders-night-2026?ref=share in a private window.
-2. Click **Buy ticket**. You are asked to sign in.
-3. Choose **Create an account** and register with any `@example.test` address. No account-type selector is shown.
-4. You return to checkout as a buyer. Click **Pay**; the simulated gateway approves it.
-5. Sign in as `admin@example.test` / `password` and open `/ops` to see the journey you just made.
+This is the exact sequence the public demo is designed for. It needs no explanation from the presenter.
+
+1. `php artisan serve` and open http://127.0.0.1:8000/ in a private window: the JourneyOps overview.
+2. Optional: toggle **Before IBM Bob / After IBM Bob** in the hero trace, or scroll to **Before → after**.
+3. Click **Launch live demo**. It opens `/events/ai-builders-night-2026?ref=share`, marked *JourneyOps demo scenario*.
+4. Click **Buy ticket**. Checkout asks you to sign in and shows the ticket you're buying.
+5. Choose **Create an account**. The page reads *Create your account to continue checkout*, and no account-type selector is shown. Register with any new `@example.test` address and press **Create account and continue**.
+6. You land back on checkout as a buyer (*Review and pay*, marked *Simulated checkout*). Press **Pay $49.00**.
+7. The confirmation page says **Purchase complete**. Next to it, *What the telemetry recorded* reads your journey from the telemetry store: `COMPLETED`, with `checkout_resumed`, `order_created` and `payment_completed` recorded and `signup_completed · user_role=buyer`.
+8. **View journey evidence** leads to step 4 of `/demo`. For the full ops console, sign out and sign in as `admin@example.test` / `password`, then open `/ops` and select your journey to see its timeline, with metadata per step.
+
+`/demo` walks through the same five steps with buttons for each one.
+
+### Public demo reset
+
+The public UI deliberately has **no reset endpoint**. Resetting stays an operator action on the host:
+
+```bash
+php artisan demo:reset --force
+```
+
+Judges' registrations and orders accumulate until an operator runs it. Everything is synthetic.
 
 ## 8. Where the IBM Bob evidence is
 
