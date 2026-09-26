@@ -1,28 +1,195 @@
-# JourneyOps Ticket Lab
+# JourneyOps
 
-A production-like digital ticketing laboratory with user-journey telemetry for AI-assisted software investigation.
+**From broken user journeys to verified fixes with IBM Bob.**
 
-JourneyOps Ticket Lab is a small but complete ticketing platform that runs entirely on a laptop:
+> *"The test suite was green. The user journey wasn't."*
 
-- **Organizers (producers)** create events, publish them and share a public link.
-- **Buyers** open the link, buy tickets, sign in or create an account at checkout, and pay (simulated, deterministic).
-- **Every step of every visit** is recorded as a *journey* in SQLite and mirrored to a JSON Lines log.
-- An **operations view** (`/ops`) and a set of **`ops:*` Artisan commands** let an engineer check sales and reconstruct any journey.
-- A **synthetic traffic generator** drives the real web flows (routes, middleware, controllers, sessions, CSRF) to produce realistic, reproducible history.
+Most coding agents start when a developer already knows what needs to be fixed.
+JourneyOps starts one step earlier: working out what actually happened to the user.
 
-All data is synthetic. See [docs/DATA_POLICY.md](docs/DATA_POLICY.md).
+JourneyOps is a workflow prototype. It gives **IBM Bob** evidence of real user journeys (journey telemetry, application state and the source code) instead of a hand-written bug ticket. Bob then investigates, finds the root cause, plans and implements a fix, adds regression tests, replays the original journey and independently verifies the result.
 
-## Stack
+The prototype runs against a **synthetic ticketing application** (the *Ticket Lab*). The ticketing app is only the test bed. The product idea is the workflow that connects:
+
+```
+user-journey telemetry + application state + source code + IBM Bob + verification
+```
+
+| | Before IBM Bob (`baseline-pre-bob`) | After IBM Bob (`bob-final-verified`) |
+|---|---|---|
+| Test suite | ✅ 45 passed | ✅ 48 passed / 191 assertions |
+| Visitor who signs up at checkout | ❌ becomes a **producer** and never pays | ✅ becomes a **buyer** and pays |
+| Replayed journey outcome | **ABANDONED** | **COMPLETED** |
+
+---
+
+## The problem
+
+Engineering workflows usually start *after* someone already knows there is a bug: a failing test, a stack trace, a ticket that says what's broken. Many production failures don't look like that:
+
+- a redirect that sends the user to the wrong place
+- a role or account type assigned by an unexpected default
+- behaviour that only breaks in a specific session state (for example, signing up *during* checkout)
+- a funnel that silently loses users without raising an error
+- flows that unit and feature tests never exercise end to end
+
+In these cases nothing crashes and CI stays green. The hardest step is **reconstructing what actually happened to the user**. Only after that can anyone write the ticket.
+
+## The idea
+
+JourneyOps turns operational user-journey evidence into context for a coding agent:
+
+```
+production-like telemetry
+  → anomaly investigation
+  → source-code tracing
+  → root cause
+  → remediation plan
+  → code fix
+  → regression tests
+  → journey replay
+  → independent verification
+```
+
+Bob gets the recorded journeys (the event sequences, roles, redirect targets and outcomes of real visits) and is asked whether the purchase experience is healthy. It is **not** told that a bug exists.
+
+## Why IBM Bob
+
+Bob was used for the whole investigate → plan → fix → verify loop, not for autocomplete. Everything below is taken from the exported task histories in [`bob_sessions/`](bob_sessions/):
+
+| Capability | Where it shows up |
+|---|---|
+| **Investigative reasoning from evidence** | Task 01 got a generic "is purchasing healthy?" prompt with instructions *not* to assume a bug. Bob summarised 16 journeys, separated normal from suspicious behaviour and isolated one journey (`JRN-721B2F18`) where a checkout signup produced a producer account. |
+| **Parallel subagents** | Tasks 01 and 02 used `spawn_subagent` to read telemetry (`storage/logs/journey.jsonl`), configuration and source in parallel. |
+| **Workspace reading and code tracing** | Bob traced the journey back through `register.blade.php` → `RegisterAccount` → `config/accounts.php` → `PostAuthenticationRedirect`, with file and line references. |
+| **Plan mode and skills** | Task 02 ran in Plan mode with the `create-plan` skill. It compared four remediation options, chose one, and defined a regression plan and acceptance criteria. |
+| **Challenging its own plan** | In Task 03 Bob re-checked the plan and found that a config-only fix could still break when `ACCOUNT_DEFAULT_TYPE=producer` is set. It switched to a config-independent, two-layer fix. |
+| **Agent mode: edits, tests, commands** | Task 03 used `apply_diff`, ran the targeted and full PHPUnit suites, reset the lab and replayed the journey with `execute_command`. |
+| **Independent verification** | Task 04 was a separate task that re-audited the corrected state without editing code: git state, source, tests, replay and telemetry. |
+| **Evidence trail** | Every task was exported as Markdown and captured in a session screenshot showing mode, context size and Bobcoin usage. |
+
+## Demo scenario
+
+An organizer shares a link to *AI Builders Night 2026*. A new visitor opens it, clicks **Buy ticket**, hits the sign-in wall at checkout and chooses **Create an account**.
+
+**Before**, at `baseline-pre-bob`:
+
+```
+event share visitor → checkout → sign-in wall → sign up
+  → account created as PRODUCER → /producer/onboarding → purchase abandoned
+```
+
+**After**, at `bob-final-verified`:
+
+```
+event share visitor → checkout → sign-in wall → sign up
+  → account created as BUYER → checkout resumed → order paid
+```
+
+The root cause was a combination of three things. The signup form hides the account-type selector when a purchase is in progress. The missing value then fell back to a config default of `producer`. Finally, new producers are sent to onboarding before the saved checkout URL is honoured. The existing tests covered each piece separately but never the combined path: *guest → checkout → sign up → back to checkout*.
+
+## Before vs after
+
+Measured with `php artisan demo:reset --force && php artisan demo:replay-checkout` at each tag:
+
+| | Before (`baseline-pre-bob`) | After (`bob-final-verified`) |
+|---|---|---|
+| `signup_completed.user_role` | `producer` | `buyer` |
+| `signup_completed.target_route` | `/producer/onboarding` | `/checkout/ai-builders-night-2026` |
+| Next journey event | `producer_onboarding_viewed` | `checkout_resumed` |
+| Journey outcome | **ABANDONED** | **COMPLETED** |
+| Order | none | created and paid |
+| Payment | none | `payment_started` → `payment_completed` |
+| `demo:replay-checkout` exit code | `1` | `0` |
+| Tests | 45 passed (165 assertions) | 48 passed (191 assertions), 0 regressions |
+| Explicit producer signup (`account_type=producer`) | producer → onboarding | producer → onboarding (unchanged) |
+
+## Architecture
+
+```mermaid
+flowchart TD
+    V["Visitor / synthetic traffic<br/>(app/Demo: SyntheticBrowser, TrafficScenarios)"] --> APP
+    subgraph APP["Ticket Lab — Laravel 13"]
+        R["routes/web.php → controllers<br/>checkout · auth · producer"] --> D["Actions / Support<br/>RegisterAccount · PurchaseIntent<br/>PostAuthenticationRedirect"]
+        D --> DB[("SQLite<br/>users · orders · events")]
+        R --> JT["JourneyTracker → JourneyRecorder"]
+    end
+    JT --> JE[("journey_sessions<br/>journey_events")]
+    JT --> JL["storage/logs/journey.jsonl"]
+    JE --> OPS["ops:summary · ops:journeys · ops:journey · /ops"]
+
+    subgraph BOB["IBM Bob"]
+        T1["Task 01 · Ask<br/>investigate"] --> T2["Task 02 · Plan<br/>remediate"] --> T3["Task 03 · Agent<br/>fix + test + replay"] --> T4["Task 04 · Agent<br/>independent verification"]
+    end
+    JL --> T1
+    OPS --> T1
+    DB --> T1
+    SRC["Source code + tests"] --> T1
+    T3 --> PR["Code change + regression tests<br/>(commit 8c2cd31)"]
+    PR --> TESTS["php artisan test<br/>48 passed"]
+    PR --> REPLAY["php artisan demo:replay-checkout<br/>Outcome: COMPLETED"]
+    TESTS --> T4
+    REPLAY --> T4
+    T4 --> OUT["Verified outcome<br/>tag bob-final-verified"]
+```
+
+More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Bob workflow
+
+Each task ran as a separate IBM Bob task. The later tasks received only the exported record of the earlier ones.
+
+| Task | Mode | What Bob did | Evidence |
+|---|---|---|---|
+| **01 — Investigation** | Ask | Read telemetry, logs, docs and code without editing anything. Found that the one checkout-signup journey created a producer and ended abandoned on `/producer/onboarding`. Recommended a root-cause investigation. | [export](bob_sessions/journeyops_task01_operational_analysis.md) · [screenshot](bob_sessions/journeyops_task01_operational_analysis_summary.png) |
+| **02 — Remediation planning** | Plan | Confirmed the root cause, compared four options (config default, controller guard, both, redirect reordering), defined regression tests, acceptance criteria and risks. | [export](bob_sessions/journeyops_task02_remediation_plan.md) · [screenshot](bob_sessions/journeyops_task02_remediation_plan_summary.png) |
+| **03 — Implementation** | Agent | Re-validated the plan, implemented a two-layer fix, added 3 regression tests, ran the suite (48/48), reset the lab and replayed the journey (COMPLETED). | [export](bob_sessions/journeyops_task03_implementation.md) · [screenshot](bob_sessions/journeyops_task03_implementation_summary.png) |
+| **04 — Independent verification** | Agent | Re-audited git state, source, tests, replay (over HTTP against `php artisan serve`) and telemetry without modifying source. Result: **VERIFIED**. | [export](bob_sessions/journeyops_task04_final_verification.md) · [screenshot](bob_sessions/journeyops_task04_final_verification_summary.png) |
+
+**The fix** ([`8c2cd31`](https://github.com/filpe19/journeyops/commit/8c2cd31)):
+
+1. **Invariant layer:** `RegisterController::store` forces `account_type = buyer` whenever a `PurchaseIntent` is active in the session, whatever `ACCOUNT_DEFAULT_TYPE` says.
+2. **Default layer:** `config/accounts.php` now falls back to `buyer` instead of `producer`, and `.env.example` sets `ACCOUNT_DEFAULT_TYPE=buyer` explicitly.
+3. **Regression tests:**
+   - `test_guest_who_registers_during_checkout_returns_to_checkout_as_buyer`
+   - `test_checkout_registration_forces_buyer_even_when_default_is_producer`
+   - `test_registration_without_account_type_defaults_to_buyer`
+
+Explicit producer registration (`/sell` → `account_type=producer` → onboarding) is unchanged.
+
+## Evidence
+
+[`bob_sessions/`](bob_sessions/) holds the unedited hackathon evidence:
+
+- `journeyops_task0N_*.md`: human-readable exports of each IBM Bob task (prompt, tool calls and final report)
+- `journeyops_task0N_*_summary.png`: task-session screenshots (mode, context length, Bobcoin usage)
+
+These files are committed exactly as exported and have not been modified since.
+
+## Technical stack
 
 | Layer | Choice |
 |---|---|
-| Language / framework | PHP 8.4+ (tested on 8.5), Laravel 13 |
-| Database | SQLite (`database/database.sqlite`) |
-| Frontend | Blade + Tailwind CSS 4, built with Vite |
-| Tests | PHPUnit 12 (`php artisan test`) |
-| External services | none (no payment gateway, no third-party APIs, no Docker) |
+| Language / framework | PHP 8.4+ (developed on PHP 8.5), Laravel 13 |
+| Database | SQLite |
+| Frontend | Blade, Tailwind CSS 4, Vite 8 |
+| Tests | PHPUnit 12 |
+| Telemetry | Custom journey recorder → SQLite tables + JSON Lines log |
+| AI engineering agent | IBM Bob (Ask, Plan and Agent modes, subagents, skills) |
+| External services | None: no payment provider, no third-party APIs, no Docker |
 
-## Quick start
+## Run locally
+
+Requirements: PHP 8.4+ with `pdo_sqlite`, Composer 2, Node.js 20+.
+
+```bash
+git clone https://github.com/filpe19/journeyops.git
+cd journeyops
+./scripts/setup.sh                      # composer install, .env, key, SQLite, migrate + seed, npm install + build
+php artisan serve --host=127.0.0.1 --port=8000
+```
+
+Manual steps equivalent to `setup.sh`:
 
 ```bash
 composer install
@@ -32,32 +199,21 @@ touch database/database.sqlite
 php artisan migrate:fresh --seed
 npm install
 npm run build
-php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-Or run `./scripts/setup.sh` which performs all of the above except starting the server.
+Useful URLs: `/events/ai-builders-night-2026?ref=share` (shared event link), `/ops` (operations view, sign in as `admin@example.test` / `password`), `/health`.
 
-## URLs
+## Demo commands
 
-| What | URL |
-|---|---|
-| Home / catalog | http://127.0.0.1:8000/ |
-| Demo event (shared link) | http://127.0.0.1:8000/events/ai-builders-night-2026?ref=share |
-| Operations view | http://127.0.0.1:8000/ops (admin only) |
-| Health check | http://127.0.0.1:8000/health |
-| Organizer landing | http://127.0.0.1:8000/sell |
+```bash
+php artisan demo:reset --force                   # wipe DB + journey log, reseed ~3 days of synthetic traffic
+php artisan demo:replay-checkout                 # replay: share link → checkout → sign up → pay (exit 0 = COMPLETED)
+php artisan ops:summary --days=7                 # sales and journey health
+php artisan ops:journeys --with-sequence         # recent journeys with their event sequences
+php artisan ops:journey JRN-XXXXXXXX             # full timeline of one journey (--json available)
+```
 
-## Demo accounts
-
-All passwords are `password`. These accounts exist only in the local synthetic database.
-
-| Email | Role |
-|---|---|
-| `admin@example.test` | admin (access to `/ops`) |
-| `producer@example.test` | producer — *NovaStage Events* |
-| `buyer.one@example.test`, `buyer.two@example.test`, `buyer.four@example.test`, `buyer.five@example.test` | buyer |
-
-`buyer.three@example.test` and `producer.lumen@example.test` are created by the traffic generator through the public signup flow.
+Step-by-step walkthrough, including how to reproduce the **baseline** failure safely: [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md).
 
 ## Tests
 
@@ -65,48 +221,44 @@ All passwords are `password`. These accounts exist only in the local synthetic d
 php artisan test
 ```
 
-## Operational commands
+Current result on `main`: **48 passed, 191 assertions**. At `baseline-pre-bob`: 45 passed, 165 assertions. The baseline suite was green while the journey was broken.
 
-```bash
-php artisan ops:summary [--days=1] [--json]          # sales + journey health for a window
-php artisan ops:journeys [--limit=25] [--source=event_share] [--with-sequence] [--json]
-php artisan ops:journey JRN-XXXXXXXX [--json]        # full timeline of one journey (code or UUID)
-php artisan journeys:close-idle [--minutes=30]       # end idle journeys (scheduled every 5 min)
-```
+## Repository milestones
 
-## Demo data and traffic
+| Ref | Meaning |
+|---|---|
+| tag `baseline-pre-bob` (`5f69cc3`) | The lab before IBM Bob touched it. The defect is present and all tests pass. |
+| commits `e0ef7e2` … `9cb0a14` | Bob task evidence (01, 02), the fix (`8c2cd31`), then task evidence (03, 04). |
+| tag `bob-final-verified` (`9cb0a14`) | The state IBM Bob independently verified in Task 04. |
+| branch `bob-investigation` | The branch the Bob work happened on (points at `bob-final-verified`). |
+| branch `main` | `bob-final-verified` plus the public documentation in this release. |
 
-```bash
-php artisan demo:reset --force        # wipe DB + journey log, reseed accounts, events and ~3 days of traffic
-php artisan demo:seed                 # same data into an empty, migrated database
-php artisan demo:simulate --list      # available synthetic visitor scenarios
-php artisan demo:simulate --all       # run every scenario now
-php artisan demo:simulate returning-buyer-share-link newsletter-buyer
-php artisan demo:replay-checkout      # new visitor from the shared link goes through checkout with signup
-./scripts/replay_checkout_journey.sh  # same as above
-```
+Because both ends are tagged, the before/after comparison can be reproduced exactly: `git diff baseline-pre-bob bob-final-verified -- app config tests .env.example`.
 
-Traffic runs in-process by default (no server needed). Add `--url=http://127.0.0.1:8000` to `demo:simulate` or `demo:replay-checkout` to send it over HTTP to a running server instead.
+## Data and privacy
 
-`./scripts/smoke.sh [base-url]` checks the main pages of a running instance.
+- **Synthetic data only.** Every account uses the reserved `example.test` domain. Names, organizers and events are invented.
+- **No real users and no customer data.** No production databases, dumps or analytics exports were used.
+- **Simulated payment.** `SimulatedPaymentGateway` always approves locally. No card data is requested or stored.
+- Telemetry never records passwords, tokens, cookies, session IDs or IP addresses. See [docs/DATA_POLICY.md](docs/DATA_POLICY.md).
 
 ## Documentation
 
-- [AGENTS.md](AGENTS.md) — orientation for engineers and coding agents
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md)
-- [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md)
-- [docs/DATA_POLICY.md](docs/DATA_POLICY.md)
+| Document | Purpose |
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | JourneyOps architecture, agent workflow and trust model |
+| [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md) | Reproduce the demo (before and after) locally |
+| [docs/TICKET_LAB_ARCHITECTURE.md](docs/TICKET_LAB_ARCHITECTURE.md) | Ticket Lab internals: routes, flows, data model |
+| [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md) | Journey event catalogue, outcome rules, JSONL and SQL |
+| [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md) | Local setup and troubleshooting |
+| [docs/DATA_POLICY.md](docs/DATA_POLICY.md) | Synthetic data policy |
+| [AGENTS.md](AGENTS.md) | Orientation for engineers and coding agents (the context Bob worked from) |
+| [docs/README.md](docs/README.md) | Index, including hackathon submission materials |
 
-## Repository layout
+## Hackathon
 
-```
-app/            application code (see docs/ARCHITECTURE.md)
-bob_sessions/   IBM Bob task-session screenshots for the hackathon submission
-database/       migrations, factories, seeders (synthetic data only)
-docs/           architecture, observability, local development, data policy
-resources/      Blade views, CSS, JS
-routes/         web routes and scheduled commands
-scripts/        setup, smoke test and journey replay helpers
-tests/          PHPUnit feature and unit tests
-```
+JourneyOps was built for the **IBM Bob 2.0 Hackathon**. It is a prototype of a workflow, not a production SaaS. The Ticket Lab, its traffic and its defect are a controlled, reproducible laboratory for showing that workflow end to end.
+
+## License
+
+No `LICENSE` file is currently included. `composer.json` carries Laravel's default `"license": "MIT"` field, but no license has been formally chosen for this repository yet.

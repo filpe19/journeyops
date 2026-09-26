@@ -35,7 +35,7 @@ Browser ──► routes/web.php ──► Controllers ──► Actions / Suppo
 Domain model: `User` (role: buyer | producer | admin), `ProducerProfile`, `Event`, `Order`
 (pending | paid | cancelled), `JourneySession`, `JourneyEvent`. Money is stored in cents.
 
-More detail: `docs/ARCHITECTURE.md`.
+More detail: `docs/TICKET_LAB_ARCHITECTURE.md` (application internals) and `docs/ARCHITECTURE.md` (JourneyOps workflow).
 
 ## Commands
 
