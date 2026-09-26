@@ -23,7 +23,7 @@ Anything else has to be **screen-recorded fresh** from a local run (see [DEMO_GU
 ### 00:00 — Hook
 
 - **On screen:** terminal, `php artisan test` at `baseline-pre-bob` → `45 passed`. Cut to the baseline `demo:replay-checkout` output ending in `Outcome: ABANDONED`.
-- **Facts:** "The test suite was green. The user journey wasn't."
+- **Facts:** "The test suite was green. The user journey wasn't." The failure is the lab's seeded scenario, prepared before Bob (tag `baseline-pre-bob`). Don't present it as a real customer incident.
 
 ### 00:20 — Problem
 

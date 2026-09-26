@@ -32,13 +32,25 @@ A human starts each Bob task with a prompt and reviews the output. JourneyOps is
 
 ## 3. Role of the Ticket Lab
 
-The Ticket Lab is a controlled environment for running the workflow end to end:
+The Ticket Lab is the test environment, not the product. JourneyOps is the workflow around it: user-journey evidence + application state + source code + IBM Bob → investigation → root cause → fix → verification.
+
+**Provenance.** The lab and its incident scenario were prepared *before* the IBM Bob tasks. Commits `7006c0b` … `5f69cc3` built them, and the tag `baseline-pre-bob` marks the result. Bob's work starts from that tag and ends at `bob-final-verified`. Public-release documentation was added afterwards on `main`.
+
+```mermaid
+flowchart LR
+    LAB["Ticket Lab + seeded incident<br/>(prepared before Bob)"] --> B0["baseline-pre-bob"]
+    B0 --> T["IBM Bob tasks 01–04<br/>investigate · plan · fix · verify"]
+    T --> B1["bob-final-verified"]
+    B1 --> DOCS["public release docs (main)"]
+```
+
+It is a controlled environment for running the workflow end to end:
 
 - **Realistic enough:** organizers (producers) publish events and share links; buyers check out, sign in or sign up at a sign-in wall, and pay. Roles, onboarding middleware, session-based purchase intent and post-login redirects are all real Laravel code.
 - **Deterministic:** `demo:reset --force` rebuilds the database and replays ~3 days of synthetic visits through the actual routes, middleware, sessions and CSRF (`app/Demo/SyntheticBrowser`). The same journeys come out every time.
 - **Safe to publish:** all data is synthetic (`@example.test`) and payments are simulated.
 
-The lab contains one realistic defect, in the interaction between three individually reasonable pieces of code:
+The lab was seeded with one realistic defect before Bob started. It lives in the interaction between three individually reasonable pieces of code, and the repository contains no hints about it:
 
 | Piece | Behaviour at `baseline-pre-bob` |
 |---|---|

@@ -9,7 +9,7 @@ JourneyOps starts one step earlier: working out what actually happened to the us
 
 JourneyOps is a workflow prototype. It gives **IBM Bob** evidence of real user journeys (journey telemetry, application state and the source code) instead of a hand-written bug ticket. Bob then investigates, finds the root cause, plans and implements a fix, adds regression tests, replays the original journey and independently verifies the result.
 
-The prototype runs against a **synthetic ticketing application** (the *Ticket Lab*). The ticketing app is only the test bed. The product idea is the workflow that connects:
+The prototype runs against a **synthetic ticketing application** (the *Ticket Lab*). The ticketing app is only the test bed: a controlled scenario prepared before IBM Bob started (see [Experiment baseline](#experiment-baseline)). The product idea is the workflow that connects:
 
 ```
 user-journey telemetry + application state + source code + IBM Bob + verification
@@ -52,6 +52,33 @@ production-like telemetry
 ```
 
 Bob gets the recorded journeys (the event sequences, roles, redirect targets and outcomes of real visits) and is asked whether the purchase experience is healthy. It is **not** told that a bug exists.
+
+## Experiment baseline
+
+JourneyOps uses a synthetic ticketing application as a controlled software-engineering laboratory. **The lab and its incident scenario were prepared before the IBM Bob investigation began.** They include the purchase flow, authentication, buyer and producer roles, producer onboarding, journey telemetry, synthetic traffic, replay tooling and tests. The tag `baseline-pre-bob` marks that exact pre-Bob state.
+
+Starting from that baseline, IBM Bob performed the engineering work in four separate tasks:
+
+1. operational investigation;
+2. remediation planning;
+3. implementation and regression testing;
+4. independent final verification.
+
+The resulting verified state is preserved as `bob-final-verified`. Public-release documentation and packaging (this README, `docs/`, `LICENSE`) were added after that.
+
+```mermaid
+flowchart TD
+    LAB["Synthetic Ticket Lab<br/>app, telemetry, traffic, replay, tests<br/>+ seeded incident scenario"] --> BASE["tag baseline-pre-bob<br/>45 tests green · journey ABANDONED"]
+    BASE --> BOB
+    subgraph BOB["IBM Bob"]
+        direction LR
+        I["01 Investigate"] --> P["02 Plan"] --> F["03 Fix + test"] --> V["04 Verify"]
+    end
+    BOB --> FINAL["tag bob-final-verified<br/>48 tests green · journey COMPLETED"]
+    FINAL --> DOCS["Public release documentation<br/>(branch main)"]
+```
+
+In short, the lab created the controlled problem space and IBM Bob did the investigation and remediation. Git history is left intact, so the provenance of every commit can be inspected.
 
 ## Why IBM Bob
 
@@ -175,7 +202,7 @@ These files are committed exactly as exported and have not been modified since.
 | Frontend | Blade, Tailwind CSS 4, Vite 8 |
 | Tests | PHPUnit 12 |
 | Telemetry | Custom journey recorder → SQLite tables + JSON Lines log |
-| AI engineering agent | IBM Bob (Ask, Plan and Agent modes, subagents, skills) |
+| AI engineering agent (investigation → verification) | IBM Bob (Ask, Plan and Agent modes, subagents, skills) |
 | External services | None: no payment provider, no third-party APIs, no Docker |
 
 ## Run locally
@@ -227,8 +254,9 @@ Current result on `main`: **48 passed, 191 assertions**. At `baseline-pre-bob`: 
 
 | Ref | Meaning |
 |---|---|
+| commits `7006c0b` … `5f69cc3` | Construction of the Ticket Lab and its incident scenario, before any IBM Bob task. |
 | tag `baseline-pre-bob` (`5f69cc3`) | The lab before IBM Bob touched it. The defect is present and all tests pass. |
-| commits `e0ef7e2` … `9cb0a14` | Bob task evidence (01, 02), the fix (`8c2cd31`), then task evidence (03, 04). |
+| commits `e0ef7e2` … `9cb0a14` | IBM Bob's work committed to the repository: Task 01 and 02 evidence, Bob's fix and tests (`8c2cd31`), then Task 03 and 04 evidence. |
 | tag `bob-final-verified` (`9cb0a14`) | The state IBM Bob independently verified in Task 04. |
 | branch `bob-investigation` | The branch the Bob work happened on (points at `bob-final-verified`). |
 | branch `main` | `bob-final-verified` plus the public documentation in this release. |
@@ -257,7 +285,7 @@ Because both ends are tagged, the before/after comparison can be reproduced exac
 
 ## Hackathon
 
-JourneyOps was built for the **IBM Bob 2.0 Hackathon**. It is a prototype of a workflow, not a production SaaS. The Ticket Lab, its traffic and its defect are a controlled, reproducible laboratory for showing that workflow end to end.
+JourneyOps was built for the **IBM Bob 2.0 Hackathon**. It is a prototype of a workflow, not a production SaaS. The Ticket Lab, its traffic and its seeded defect were prepared before the Bob tasks as a controlled, reproducible laboratory for showing that workflow end to end. The hackathon work shown here is what IBM Bob did from `baseline-pre-bob` onward.
 
 ## License
 

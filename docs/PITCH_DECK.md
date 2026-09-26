@@ -12,7 +12,7 @@ This is the source content for a five-slide deck, not the final slides. Each sli
 
 - JourneyOps: from broken user journeys to verified fixes with IBM Bob
 - Tests can pass while users still fail
-- 45 / 45 tests passing, and every new visitor who signed up at checkout lost their purchase
+- In our controlled lab: 45 / 45 tests passing, and every new visitor who signed up at checkout lost their purchase
 
 **Visual:** a green CI badge next to a journey that ends in a red "ABANDONED".
 
@@ -53,6 +53,9 @@ Source code & tests
 | **Discover** | **Plan** | **Fix** | **Verify** |
 | Ask mode + subagents | Plan mode + `create-plan` skill | Agent mode | Agent mode, no edits |
 | Found 1 anomalous journey among 16 and traced it to code | 4 options compared, tests and acceptance criteria defined | Two-layer fix, 3 regression tests, replay | Tests, HTTP replay, telemetry, git state: VERIFIED |
+
+**Provenance strip (small, under the timeline):**
+`BEFORE BOB: controlled lab + seeded failure scenario (baseline-pre-bob)` → `WITH BOB: discover → plan → fix → verify` → `AFTER: verified completed journey (bob-final-verified)`
 
 **Visual:** four-step horizontal timeline, one screenshot thumbnail from `bob_sessions/` per task.
 

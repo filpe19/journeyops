@@ -18,17 +18,17 @@ JourneyOps gives IBM Bob evidence of what actually happened to users. Bob can th
 
 ## Short Description
 
-The test suite was green. The user journey wasn't. JourneyOps is a workflow prototype that feeds IBM Bob recorded user-journey telemetry, application state and source code instead of a hand-written bug ticket. In a synthetic ticketing lab, Bob was only asked whether purchasing looked healthy. It independently found that visitors who signed up at checkout were being turned into event organizers and losing their purchase. It then traced the cause to the code, planned and implemented a two-layer fix, added regression tests and replayed the journey. A separate Bob task verified the result: ABANDONED became COMPLETED, and the suite went from 45 to 48 tests with zero regressions.
+The test suite was green. The user journey wasn't. JourneyOps uses a controlled synthetic application to show how IBM Bob can investigate, fix and verify a production-style user-journey failure from operational evidence. It is a workflow prototype that feeds IBM Bob recorded user-journey telemetry, application state and source code instead of a hand-written bug ticket. In a synthetic ticketing lab, Bob was only asked whether purchasing looked healthy. It independently found that visitors who signed up at checkout were being turned into event organizers and losing their purchase. It then traced the cause to the code, planned and implemented a two-layer fix, added regression tests and replayed the journey. A separate Bob task verified the result: ABANDONED became COMPLETED, and the suite went from 45 to 48 tests with zero regressions.
 
 ## Long Description
 
 Most coding agents start when a developer already knows what needs to be fixed. JourneyOps starts one step earlier: understanding what actually happened to the user.
 
-We built a small but realistic ticketing application (the Ticket Lab: Laravel 13, SQLite) in which every step of every visit is recorded as a journey event. Each event carries the user's role, the route, where the response redirected and where the user was expected to go next. A synthetic traffic generator drives the real HTTP flows, so the lab produces a deterministic, production-like history of visits, orders and abandonments.
+Before the IBM Bob investigation began, we prepared a controlled laboratory: a small but realistic ticketing application (the Ticket Lab: Laravel 13, SQLite). The ticketing app is the test bed, not the product. In it, every step of every visit is recorded as a journey event. Each event carries the user's role, the route, where the response redirected and where the user was expected to go next. A synthetic traffic generator drives the real HTTP flows, so the lab produces a deterministic, production-like history of visits, orders and abandonments.
 
-The lab contains a realistic defect of the kind that slips through CI. When a new visitor opens a shared event link, clicks Buy, and creates an account at the checkout sign-in wall, the signup form hides the account-type selector. The missing value falls back to a config default of `producer`, and new producers are routed to organizer onboarding before the saved checkout URL is honoured. The visitor becomes an event organizer and the purchase is lost. All 45 tests pass.
+We deliberately seeded the lab with a realistic defect of the kind that slips through CI, and left no hints about it in the repository. The tag `baseline-pre-bob` preserves this exact pre-Bob state. When a new visitor opens a shared event link, clicks Buy, and creates an account at the checkout sign-in wall, the signup form hides the account-type selector. The missing value falls back to a config default of `producer`, and new producers are routed to organizer onboarding before the saved checkout URL is honoured. The visitor becomes an event organizer and the purchase is lost. All 45 tests pass.
 
-We then ran IBM Bob as four separate tasks:
+Starting from that baseline, we ran IBM Bob as four separate tasks:
 
 1. **Investigation (Ask mode).** A generic production-engineering prompt: "is the ticket purchasing experience operating normally?", with explicit instructions not to assume a bug. Bob used subagents to read the journey log, configuration and source in parallel. It separated normal abandonments from one anomalous journey and traced that journey to the exact lines of code responsible.
 2. **Remediation planning (Plan mode, `create-plan` skill).** Bob compared four remediation options. It rejected the one that would weaken producer onboarding and defined regression tests, acceptance criteria and a replay plan.
@@ -60,12 +60,14 @@ The application records structured journey events (role, route, redirect target,
 
 ## Technical Implementation
 
+The first five items below are the pre-Bob laboratory (tag `baseline-pre-bob`). The fix and the new regression tests are IBM Bob's work.
+
 - **Ticket Lab:** Laravel 13 on PHP 8.4+ (developed on PHP 8.5), SQLite, Blade, Tailwind CSS 4, Vite 8.
 - **Journey telemetry:** `JourneyTracker` / `JourneyRecorder` write every funnel step to `journey_sessions` / `journey_events` and to a JSON Lines log. Outcomes (completed, abandoned, no_checkout, active) are derived. An `X-Journey-Id` header links responses to journeys.
 - **Read model:** `ops:summary`, `ops:journeys --with-sequence`, `ops:journey <code>` and an admin `/ops` view.
 - **Synthetic traffic:** a headless `SyntheticBrowser` drives the real routes, middleware, sessions and CSRF, in-process or over HTTP. `demo:reset` produces the same three-day history on every run.
 - **Replay:** `demo:replay-checkout` runs a new visitor through share link → checkout → signup → payment, prints each stage as OBSERVED/MISSING, and exits 0 only when the purchase completes.
-- **Fix:** a guard in `RegisterController` forcing the buyer role when a `PurchaseIntent` is active, plus a corrected default in `config/accounts.php` (commit `8c2cd31`).
+- **Fix (implemented by IBM Bob in Task 03):** a guard in `RegisterController` forcing the buyer role when a `PurchaseIntent` is active, plus a corrected default in `config/accounts.php` (commit `8c2cd31`).
 - **Tests:** PHPUnit 12, with 48 tests / 191 assertions (up from 45 / 165), including three regression tests for the escaped journey.
 
 ## What Makes It Different
