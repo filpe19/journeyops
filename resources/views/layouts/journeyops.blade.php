@@ -13,7 +13,7 @@
             <span class="text-[15px]">JourneyOps</span>
         </a>
 
-        <nav class="hidden items-center gap-1 text-sm md:flex" aria-label="Primary">
+        <nav class="hidden items-center gap-1 text-sm lg:flex" aria-label="Primary">
             <a href="{{ route('demo') }}" class="btn-ghost min-h-10 px-3">Guided demo</a>
             <a href="{{ route('home') }}#architecture" class="btn-ghost min-h-10 px-3">Architecture</a>
             <a href="{{ route('home') }}#evidence" class="btn-ghost min-h-10 px-3">Evidence</a>
@@ -23,7 +23,7 @@
             <a href="{{ route('events.show', config('journeyops.demo_event')) }}?ref=share" class="btn-primary ml-2 min-h-10">Launch demo</a>
         </nav>
 
-        <details class="group relative md:hidden">
+        <details class="group relative lg:hidden">
             <summary class="btn-secondary min-h-11 cursor-pointer list-none px-3 [&::-webkit-details-marker]:hidden" aria-label="Open menu">
                 <svg class="size-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6h14M3 10h14M3 14h14"/></svg>
                 Menu
